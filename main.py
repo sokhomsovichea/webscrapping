@@ -3,8 +3,10 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import requests
 import gspread
+import schedule
+import time
+
 
 # connect to spreadsheet
 gc = gspread.service_account(filename='credentials.json')
@@ -17,68 +19,57 @@ numberofDefinition = 3
 DefinitionCol = ord(DefinitionCol)-64
 ParaphrasedCol = ord(ParaphrasedCol)-64
 
-# using selenium to do the automation
-Path = '/home/vichea/Downloads/chromedriver_linux64/chromedriver'
-
-driver = webdriver.Chrome(Path)
-
 #  XPath
 para_button = '//*[@id="InputBottomQuillControl"]/div/div/div/div[2]/div/div/div/div/button'  #paraphrase button
 input_box = '//*[@id="inputText"]'  #input field
 
+def paraphrasing():
 
-# create text file for starting row number
-from os import path
-if (path.exists("StartingRow.txt")):
-    print(colored('File Existed', 'yellow'))
-else:
-    f = open("StartingRow.txt", "w")
-    f.write(str(StartRow))
-    f.close()
-    print(colored('File Created', 'green'))
-with open('StartingRow.txt', 'r') as reader:
-    StartRow = int(reader.read())
+    # create text file for starting row number
+    from os import path
+    if (path.exists("StartingRow.txt")):
+        print(colored('File Existed', 'yellow'))
+    else:
+        f = open("StartingRow.txt", "w")
+        f.write(str(StartRow))
+        f.close()
+        print(colored('File Created', 'green'))
+    with open('StartingRow.txt', 'r') as reader:
+        StartRow = int(reader.read())
 
-driver.get('https://quillbot.com/')
+    # using selenium to do the automation
+    Path = '/home/vichea/Downloads/chromedriver_linux64/chromedriver'
+    driver = webdriver.Chrome(Path)
 
-try:
-    for j in range(3):
-        content = sh.cell(StartRow+j, DefinitionCol)
-        content = str(content).split("'")[1]
+    driver.get('https://quillbot.com/')
 
-        driver.find_element_by_xpath(input_box).send_keys(content)   #input text
-        driver.find_element_by_xpath(para_button).click()   #auto click the button
+    try:
+        for j in range(3):
+            content = sh.cell(StartRow+j, DefinitionCol)
+            content = str(content).split("'")[1]
 
-        # getting the output
-        result = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "first-sentence-half"))
-        )
-        sh.update_cell(StartRow+j, ParaphrasedCol, result.text)
-        driver.find_element_by_id('inputText').clear()
+            driver.find_element_by_xpath(input_box).send_keys(content)   #input text
+            driver.find_element_by_xpath(para_button).click()   #auto click the button
 
-        f = open('StartingRow.txt', 'w')
-        f.write(str((StartRow+j)+1))
-        f.close
+            # getting the output
+            result = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "first-sentence-half"))
+            )
+            sh.update_cell(StartRow+j, ParaphrasedCol, result.text)
+            driver.find_element_by_id('inputText').clear()
 
-finally:
-    driver.quit()
+            f = open('StartingRow.txt', 'w')
+            f.write(str((StartRow+j)+1))
+            f.close
 
-driver.quit()
-print(colored('Finished', 'green'))
+    finally:
+        driver.delete_all_cookies()
+        driver.quit()
+        print(colored('Finished', 'green'))
 
+schedule.every(10).seconds.do(paraphrasing)
 
-# executions counter
-# et = 0
-# if (path.exists("ExecutionTimes.txt")):
-#     print("File Existed")
-# else:
-#     f = open("ExecutionTimes.txt", "w")
-#     f.write(str((et)+1))
-#     f.close()
+while 1:
+    schedule.run_pending()
+    time.sleep(10)
 
-# with open("ExecutionTimes.txt", "r") as reader:
-#     et = int(reader.read())
-
-# f = open("ExecutionTimes.txt", "w")
-# f.write(str((et)+1))
-# f.close()
