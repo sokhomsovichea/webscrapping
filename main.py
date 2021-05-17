@@ -44,15 +44,16 @@ def paraphrasing():
     driver.get('https://quillbot.com/')
 
     try:
-        for j in range(3):
+        for j in range(2):
             content = sh.cell(StartRow+j, DefinitionCol)
             content = str(content).split("'")[1]
 
             driver.find_element_by_xpath(input_box).send_keys(content)   #input text
+            time.sleep(1)
             driver.find_element_by_xpath(para_button).click()   #auto click the button
 
             # getting the output
-            result = WebDriverWait(driver, 10).until(
+            result = WebDriverWait(driver, 20).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "first-sentence-half"))
             )
             sh.update_cell(StartRow+j, ParaphrasedCol, result.text)
@@ -71,5 +72,5 @@ schedule.every(10).seconds.do(paraphrasing)
 
 while 1:
     schedule.run_pending()
-    time.sleep(10)
+    time.sleep(5)
 
